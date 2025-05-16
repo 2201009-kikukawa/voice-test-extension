@@ -8,6 +8,7 @@ import {
 } from "vscode";
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
+import { setupWebviewListeners } from "../listener/EventListener";
 
 export class ViewProvider implements WebviewViewProvider {
   public static readonly viewType = "sample-id";
@@ -25,6 +26,7 @@ export class ViewProvider implements WebviewViewProvider {
     };
 
     webviewView.webview.html = this._getWebviewContent(webviewView.webview, this._extensionUri);
+    setupWebviewListeners(webviewView.webview);
   }
 
   private _getWebviewContent(webview: Webview, extensionUri: Uri) {
