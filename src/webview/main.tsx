@@ -3,11 +3,9 @@ import ReactDOM from "react-dom/client";
 import { VSCodeButton } from "@vscode/webview-ui-toolkit/react";
 import { popupTexts } from "../constants/popupTexts";
 
-let audioContext: AudioContext | null = null;
-let unlocked = false;
-
 const main = () => {
   const [audioEnabled, setAudioEnabled] = useState(false);
+  const [currentText, setCurrentText] = useState<string>("");
 
   const handleShowPopup = (e: React.MouseEvent) => {
     const vscode = acquireVsCodeApi();
@@ -18,25 +16,17 @@ const main = () => {
       text,
     });
 
-    if (!unlocked) {
-      audioContext = new AudioContext();
-      const buffer = audioContext.createBuffer(1, 1, 22050);
-      const source = audioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioContext.destination);
-      source.start(0);
-      unlocked = true;
+    // 初回操作で音声を有効化
+    if (!audioEnabled) {
       setAudioEnabled(true);
     }
   };
 
   useEffect(() => {
     window.addEventListener("message", (event) => {
-      if (event.data.type === "playAudio" && event.data.audioUrl && unlocked) {
-        const audio = new Audio(event.data.audioUrl);
-        audio.play().catch((e) => {
-          console.error("Audio playback failed:", e);
-        });
+      if (event.data.type === "showText") {
+        // Extension側から音声テキストを受信
+        setCurrentText(event.data.text);
       }
     });
   }, []);
@@ -45,9 +35,24 @@ const main = () => {
     <>
       <h1>Voice Sample</h1>
       {!audioEnabled ? (
-        <VSCodeButton onClick={handleShowPopup}>モーダルを表示</VSCodeButton>
+        <VSCodeButton onClick={handleShowPopup}>音声を有効化してモーダルを表示</VSCodeButton>
       ) : (
-        <p>✅ 音声は有効です。定期的にずんだもんが喋ります。</p>
+        <>
+          <p>✅ 音声は有効です。定期的にずんだもんが喋ります。</p>
+          <VSCodeButton onClick={handleShowPopup}>新しい音声を再生</VSCodeButton>
+          {currentText && (
+            <div
+              style={{
+                marginTop: "10px",
+                padding: "8px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+              }}>
+              <strong>再生中のテキスト:</strong>
+              <p>{currentText}</p>
+            </div>
+          )}
+        </>
       )}
     </>
   );
